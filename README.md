@@ -19,9 +19,12 @@ It contains my skills reference, my progress journal, and the actual deliverable
 312final-project/
 ├── README.md                  ← this file — repo overview
 ├── PROGRESS.md                ← session memory — read this to resume any session
+├── CLAUDE.md                  ← Claude session bootstrap instructions
+├── MRP25CDEB.md               ← full Jira board — all 18 team tickets
+├── slack.md                   ← Slack channel log (#final-project-25c-debian)
+├── tag.md                     ← team cost attribution tag schema (Story 1.4 / Bohdan)
 │
-├── eks-monitoring/            ← THE REAL DELIVERABLE (built in Phase 2-5)
-│   └── .gitkeep              ← placeholder until Phase 2
+├── eks-monitoring/            ← placeholder (real deliverable in platform-tools repo)
 │
 ├── skills/                    ← reference skills used while building
 │   ├── 02-devops-advanced/   ← Helm, Prometheus, Grafana, Alertmanager
@@ -54,10 +57,52 @@ The interview story: *"I owned the metrics stack and defined the SLO that became
 | Phase | Goal | Status |
 |-------|------|--------|
 | 1 | Understand EKS, Helm, Prometheus, Grafana, Alertmanager, CloudWatch | ✅ Done |
-| 2 | Design `eks-monitoring/` Helm chart structure + per-env values | ⬜ Next |
-| 3 | Prometheus scrape configs + CloudWatch IAM role | ⬜ Todo |
+| 2 | Design `eks-monitoring/` Helm chart structure + per-env values | ✅ Done |
+| 3 | Prometheus scrape configs + CloudWatch IAM role | ⬜ Next |
 | 4 | Dashboards as code + security | ⬜ Todo |
 | 5 | Define and defend the SLO | ⬜ Todo |
+
+---
+
+## What was built (Phase 2 — Session 4, 2026-06-08)
+
+Full Helm chart scaffolded in `platform-tools-25c-debian` on branch `feature/2.1-eks-monitoring`:
+
+```
+eks-monitoring/
+├── Chart.yaml                 ← chart identity: name, version, description
+├── values.yaml                ← default values for all environments
+├── values-dev.yaml            ← dev: 7d retention, small resources, 1 replica
+├── values-staging.yaml        ← staging: 14d retention, medium resources
+├── values-prod.yaml           ← prod: 30d retention, large resources, 2 replicas
+└── templates/
+    ├── deployment.yaml        ← Prometheus + Grafana + Alertmanager deployments
+    ├── service.yaml           ← internal cluster routing between pods
+    ├── configmap.yaml         ← Prometheus scrape configuration
+    ├── ingress.yaml           ← Grafana hostname routing
+    ├── servicemonitor.yaml    ← tells Prometheus what to scrape
+    └── prometheusrule.yaml    ← alert rules (Askar / Story 2.3 builds on this)
+```
+
+### Key decisions made in Phase 2
+
+| Setting | dev | staging | prod |
+|---------|-----|---------|------|
+| Hostname | grafana-debian-dev.312debian.com | grafana-debian-staging.312debian.com | grafana-debian-prod.312debian.com |
+| Retention | 7 days | 14 days | 30 days |
+| Replicas | 1 | 1 | 2 |
+| CPU request | 100m | 200m | 500m |
+| Memory request | 256Mi | 512Mi | 1Gi |
+
+---
+
+## Working repos
+
+| Repo | Branch | Purpose |
+|------|--------|---------|
+| `312school/platform-tools-25c-debian` | `feature/2.1-eks-monitoring` | Helm chart (main deliverable) |
+| `312school/terraform-infra-25c-debian` | `feature/2.1-—-Metrics-&-SLOs` | CloudWatch IAM role (Phase 3) |
+| `Drdmytrush90/312final-project` | `main` | Session memory + skills reference |
 
 ---
 
