@@ -9,9 +9,9 @@
 
 ## Current status
 
-- **Phase:** 1 complete — ready to start Phase 2
+- **Phase:** 2 in progress
 - **Last session:** 2026-06-08
-- **Next action:** Design the `eks-monitoring/` Helm chart folder structure (on paper before any YAML)
+- **Next action:** Review the scaffolded files in `platform-tools-25c-debian/eks-monitoring/` and understand each one before Phase 3
 
 ---
 
@@ -32,7 +32,7 @@ All tickets are in `MRP25CDEB.md` in this repo.
 ### The team — correct assignments
 
 | Story | Person | What they build |
-|-------|--------|-----------------|
+|-------|--------|--------------------|
 | 1.1 | Aiana Shadykanova | EKS cluster (CFN → Terraform migration, IPv6-primary, private nodes) |
 | 1.2 | Baigeldi | IAM roles — Developer/DevOps roles, canonical shared GHA Terraform role, consolidates all ad-hoc roles |
 | 1.3 | Yury Zialionka | Traffic plane — ingress-nginx → Gateway API + AWS Load Balancer Controller |
@@ -111,8 +111,8 @@ Don't wait on her — scrape the cluster itself meanwhile.
 | Phase | Goal | Status |
 |-------|------|--------|
 | 1 | Understand EKS, Helm, Prometheus, Grafana, Alertmanager, CloudWatch | ✅ Done |
-| 2 | Design the `eks-monitoring/` Helm chart structure + per-env values | ⬜ Next |
-| 3 | Prometheus scrape configs + CloudWatch IAM role | ⬜ Todo |
+| 2 | Design the `eks-monitoring/` Helm chart structure + per-env values | ✅ Done |
+| 3 | Prometheus scrape configs + CloudWatch IAM role | ⬜ Next |
 | 4 | Dashboards as code + security | ⬜ Todo |
 | 5 | Define and defend the SLO | ⬜ Todo |
 
@@ -139,25 +139,49 @@ Prometheus PULLS — it goes to the app. The app just waits at `/metrics`. Servi
 
 ### Datadog vs open-source — PM answer
 - Gained: cost savings, full control, data ownership, PromQL flexibility
-- Gave up: managed service, someone else's reliability guarantee
+- Gave up: managed service reliability, someone else's uptime guarantee
 - Honest framing: "The bet is our team is capable enough to run it ourselves."
 
-### Helm chart anatomy (what I learned)
+### Helm chart anatomy
 ```
 eks-monitoring/
-├── Chart.yaml          ← identity: name, version, description
+├── Chart.yaml          ← identity: name, version, description (NOT kubectl/K8s version)
 ├── values.yaml         ← default config (all environments)
-├── values-dev.yaml     ← dev overrides only (hostname, small resources, 7d retention)
-├── values-staging.yaml ← staging overrides
-├── values-prod.yaml    ← prod overrides (bigger resources, 30d retention, 2 replicas)
+├── values-dev.yaml     ← dev overrides (hostname, small resources, 7d retention, 1 replica)
+├── values-staging.yaml ← staging overrides (14d retention, medium resources)
+├── values-prod.yaml    ← prod overrides (30d retention, large resources, 2 replicas)
 └── templates/          ← Kubernetes YAML files with {{ .Values.x }} placeholders
     ├── deployment.yaml
-    ├── service.yaml
+    ├── service.yaml        ← gives pods stable internal address (how Grafana finds Prometheus)
     ├── configmap.yaml
     ├── ingress.yaml
     ├── servicemonitor.yaml   ← tells Prometheus what to scrape
     └── prometheusrule.yaml   ← alert rules
 ```
+
+### Key values differences dev vs prod
+| Setting | dev | prod |
+|---|---|---|
+| Hostname | grafana-debian-dev.312debian.com | grafana-debian-prod.312debian.com |
+| Resources | small CPU/memory | larger CPU/memory |
+| Retention | 7 days | 30 days |
+| Replicas | 1 | 2+ |
+
+---
+
+## Phase 2 — COMPLETED ✅
+
+### What was built
+- Helm chart scaffolded in `platform-tools-25c-debian` on branch `feature/2.1-eks-monitoring`
+- All 11 files created and pushed: Chart.yaml, 4 values files, 6 template files
+- Branch confirmed live at: `github.com/312school/platform-tools-25c-debian/tree/feature/2.1-eks-monitoring`
+
+### Branches summary
+| Repo | Branch | Purpose |
+|------|--------|---------|
+| `platform-tools-25c-debian` | `feature/2.1-eks-monitoring` | Helm chart (main deliverable) |
+| `terraform-infra-25c-debian` | `feature/2.1-—-Metrics-&-SLOs` | CloudWatch IAM role (Phase 3) |
+| `312final-project` | `main` | Session memory + skills reference |
 
 ---
 
@@ -181,16 +205,6 @@ Key things learned:
 - **Current cluster:** `eks-dev` (school-created, use this now — not blocked)
 - **Incoming cluster:** `eks-25c-debian-dev` (Aiana's Terraform cluster — in progress)
 - When Aiana's cluster is ready, update `deploy-platform-tools.yaml` to point at `eks-25c-debian-dev`
-
-### What I need to decide BEFORE writing any YAML
-
-1. What is the folder structure inside `eks-monitoring/`?
-2. What changes between dev, staging, and prod?
-3. Which teammate's app will I scrape? (Iryna 3.1 — need to coordinate)
-4. What is my SLO candidate? (start thinking NOW — what user journey, what target, why?)
-
-### Phase 2 checkpoint question (Claude will ask me this)
-> "What do you think changes between `values-dev.yaml` and `values-prod.yaml` for Grafana? Give me 2-3 differences in your own words."
 
 ---
 
@@ -221,7 +235,7 @@ Location: `skills/`
 ├── MRP25CDEB.md        ← ALL team tickets (full Jira board)
 ├── slack.md            ← Slack channel log — READ THIS + update at start of each session
 ├── tag.md              ← Team cost attribution tag schema (Story 1.4 / Bohdan)
-├── eks-monitoring/     ← THE REAL DELIVERABLE (built Phase 2-5)
+├── eks-monitoring/     ← placeholder only (real work in platform-tools repo)
 ├── docs/               ← SLO doc and notes (Phase 5)
 └── skills/
     ├── 02-devops-advanced/
@@ -237,6 +251,7 @@ Location: `skills/`
 | 2026-06-04 | Session 1: explored repo, identified best skills, built 5-phase plan, completed Phase 1 (all core concepts), created this repo, saved skills |
 | 2026-06-04 | Session 2: learned Helm chart anatomy (Chart.yaml, values.yaml, templates/), read full MRP25CDEB.md Jira board, mapped all 12 teammates to correct stories, understood the full project picture across all 5 epics |
 | 2026-06-08 | Session 3: read school resources repo (25c-debian-final) — got scaffold structure for platform-tools and terraform-infra. Added tag.md (Bohdan's cost attribution schema, Story 1.4). Added slack.md (Slack channel memory file). Read #final-project-25c-debian — key updates: Aiana's cluster is eks-dev now / eks-25c-debian-dev coming, tonight's standup at 9pm CST, Bohdan's PR #1 needs approval |
+| 2026-06-08 | Session 4: Phase 1 refreshed (all core concepts). Phase 2 checkpoint passed (dev vs prod differences: hostname, resources, retention, replicas). Scaffolded full eks-monitoring Helm chart in platform-tools-25c-debian on branch feature/2.1-eks-monitoring. 11 files created and pushed. |
 
 ---
 
