@@ -10,7 +10,7 @@
 ## Current status
 
 - **Phase:** 1 complete — ready to start Phase 2
-- **Last session:** 2026-06-04
+- **Last session:** 2026-06-08
 - **Next action:** Design the `eks-monitoring/` Helm chart folder structure (on paper before any YAML)
 
 ---
@@ -161,7 +161,26 @@ eks-monitoring/
 
 ---
 
-## Phase 2 — NEXT ⬜
+## School resources repo (added session 3)
+
+The school provided a reference repo: `Drdmytrush90/25c-debian-final`
+It contains the actual scaffold for the two shared repos I'll be working in:
+
+- **`platform-tools-25c-debian`** — where `eks-monitoring/` lives (my deliverable folder)
+- **`terraform-infra-25c-debian`** — where my CloudWatch IAM role Terraform goes
+
+Key things learned:
+- My Helm chart goes under `platform-tools-25c-debian/eks-monitoring/`
+- The `deploy-platform-tools.yaml` workflow is shared — I add my section to it
+- Terraform follows root-per-env pattern: `roots/devops-project-main/` with `dev.tfvars`, `staging.tfvars`, `production.tfvars`
+- S3 state backend uses branch name as key — no conflicts between teammates' feature branches
+- Terraform destroy runs on PR approval, apply runs on merge (prevents resource conflicts)
+
+## Live cluster info (updated session 3)
+
+- **Current cluster:** `eks-dev` (school-created, use this now — not blocked)
+- **Incoming cluster:** `eks-25c-debian-dev` (Aiana's Terraform cluster — in progress)
+- When Aiana's cluster is ready, update `deploy-platform-tools.yaml` to point at `eks-25c-debian-dev`
 
 ### What I need to decide BEFORE writing any YAML
 
@@ -198,8 +217,10 @@ Location: `skills/`
 312final-project/
 ├── README.md           ← project overview
 ├── PROGRESS.md         ← THIS FILE — session memory
-├── MRP25CDEB.md        ← ALL team tickets (full Jira board)
 ├── CLAUDE.md           ← Claude instructions
+├── MRP25CDEB.md        ← ALL team tickets (full Jira board)
+├── slack.md            ← Slack channel log — READ THIS + update at start of each session
+├── tag.md              ← Team cost attribution tag schema (Story 1.4 / Bohdan)
 ├── eks-monitoring/     ← THE REAL DELIVERABLE (built Phase 2-5)
 ├── docs/               ← SLO doc and notes (Phase 5)
 └── skills/
@@ -215,6 +236,7 @@ Location: `skills/`
 |------|-------------|
 | 2026-06-04 | Session 1: explored repo, identified best skills, built 5-phase plan, completed Phase 1 (all core concepts), created this repo, saved skills |
 | 2026-06-04 | Session 2: learned Helm chart anatomy (Chart.yaml, values.yaml, templates/), read full MRP25CDEB.md Jira board, mapped all 12 teammates to correct stories, understood the full project picture across all 5 epics |
+| 2026-06-08 | Session 3: read school resources repo (25c-debian-final) — got scaffold structure for platform-tools and terraform-infra. Added tag.md (Bohdan's cost attribution schema, Story 1.4). Added slack.md (Slack channel memory file). Read #final-project-25c-debian — key updates: Aiana's cluster is eks-dev now / eks-25c-debian-dev coming, tonight's standup at 9pm CST, Bohdan's PR #1 needs approval |
 
 ---
 
