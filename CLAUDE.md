@@ -28,6 +28,19 @@ Read these files to resume where the last session ended:
 
 ---
 
+# GitHub Tokens
+
+This project uses **two separate tokens** — always use the correct one for the correct repo:
+
+| Token | Stored in project file | Use for |
+|-------|----------------------|---------|
+| **GitHub repo** | `GitHub_repo` | `Drdmytrush90/*` — personal repos (312final-project, etc.) |
+| **git 312 repo acces** | `git_312_repo_acces` | `312school/*` — school org repos (platform-tools, terraform-infra, versus-25c-debian, etc.) |
+
+> ⚠️ Always load both token files at the start of a session. Never mix them up.
+
+---
+
 # Working Repos (where the real deliverables live)
 
 | Repo | Branch | What goes there |
@@ -35,3 +48,11 @@ Read these files to resume where the last session ended:
 | `312school/platform-tools-25c-debian` | `feature/2.1-eks-monitoring` | Helm chart — Prometheus + Grafana + Alertmanager |
 | `312school/terraform-infra-25c-debian` | `feature/2.1-—-Metrics-&-SLOs` | CloudWatch IAM role (Terraform) |
 | `Drdmytrush90/312final-project` | `main` | Session memory, skills reference, progress journal |
+
+---
+
+# Teammate Repos (read access for coordination)
+
+| Repo | Owner | Why it matters |
+|------|-------|----------------|
+| `312school/versus-25c-debian` | Iryna Rozenstein (Story 3.1) | My Prometheus scrape target — Python/Django backend + RDS MySQL on Kubernetes. Need her to add `django-prometheus` and expose `/metrics`. DM sent 2026-06-09. |

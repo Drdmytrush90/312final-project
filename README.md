@@ -103,6 +103,14 @@ eks-monitoring/
 | `312school/platform-tools-25c-debian` | `feature/2.1-eks-monitoring` | Helm chart (main deliverable) |
 | `312school/terraform-infra-25c-debian` | `feature/2.1-—-Metrics-&-SLOs` | CloudWatch IAM role (Phase 3) |
 | `Drdmytrush90/312final-project` | `main` | Session memory + skills reference |
+| `312school/versus-25c-debian` | — | Iryna's app (Story 3.1) — my Prometheus scrape target |
+
+## Teammate repos accessed this project
+
+| Repo | Owner | What we did |
+|------|-------|-------------|
+| `312school/versus-25c-debian` | Iryna Rozenstein (Story 3.1) | Read PR #3 — reviewed Docker images + Helm charts. Confirmed no `/metrics` endpoint yet. Sent Iryna DM 2026-06-09 asking to add `django-prometheus`. |
+| `312school/terraform-infra-25c-debian` | Team shared repo | Reviewed Baigeldi's PR (1.2 IAM modules) and Bohdan's PR (default_tags). Waiting for Bohdan's tags to merge before pushing Phase 3 IAM role. |
 
 ---
 
