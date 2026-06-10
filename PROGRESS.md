@@ -10,8 +10,8 @@
 ## Current status
 
 - **Phase:** 3 in progress
-- **Last session:** 2026-06-09
-- **Next action:** Wait for Bohdan's `feature/add-default-tags-providers` PR to merge, then push `grafana-cloudwatch-role.tf` to `terraform-infra-25c-debian` on branch `feature/2.1-—-Metrics-&-SLOs`
+- **Last session:** 2026-06-10
+- **Next action:** (1) Wait for Bohdan's PR to merge → push `grafana-cloudwatch-role.tf`. (2) Wait for Iryna's reply (release name/namespace + name:http port) → write ServiceMonitor. (3) Update `deploy-platform-tools.yaml` cluster name for CI deploy. (4) Deploy to `eks-dev` manually (kubeconfig ready). (5) Define final SLO for Versus app.
 
 ---
 
@@ -274,3 +274,4 @@ Location: `skills/`
 3. Open new Claude chat, paste fresh token
 4. Say: *"Here is my progress file, let's continue"* and paste this file
 5. Claude reads it and picks up exactly where we left off
+| 2026-06-10 | Session 6: Connected Jira via Atlassian Rovo — confirmed ticket MRP25CDEB-6 is your active story. Built daily 20-min study plan. Reviewed project blockers: Bohdan's PR still not merged (holds Terraform push), Iryna confirmed /metrics is in her branch but waiting on release name/namespace + name:http port tweak reply. Explained Helm umbrella chart structure (eks-monitoring as parent, Prometheus/Grafana/Alertmanager as subcharts) and why it's the right design decision. Wrote PromQL scrape queries for live eks-dev cluster (node CPU/memory, pod status, deployment replicas, target up/down). Explained SLI vs SLO, how to write one for the Versus app. Built and pushed WORKING-WITH-AI.md memoir to this repo — 5 real decisions, 4 real incidents (IAM role trust ≠ EKS access entry, namespace missing from Iryna DM, default_tags conflict with Bohdan, Terraform timing vs blocking PR). Kubeconfig confirmed: eks-dev is reachable now; deploy-platform-tools.yaml still has stale cluster name (temporary-eks-cluster-${ENVIRONMENT_STAGE}) — needs update when doing CI deploy. |
