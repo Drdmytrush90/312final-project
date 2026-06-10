@@ -3,7 +3,7 @@
 > **How to use this file:**
 > At the start of every new session, ask Claude to read the Slack channel `#final-project-25c-debian`
 > and update this file with anything new. This keeps you caught up without losing context between sessions.
-> Last updated: 2026-06-08
+> Last updated: 2026-06-09
 
 ---
 
@@ -14,7 +14,7 @@
 | Approve Bohdan's PR #1 (cost tags) | Bohdan | ⬜ Pending |
 | Update Jira ticket 2.1 progress before tonight's meeting | Tony | ⬜ Pending |
 | Tonight's standup meeting — 9pm CST | Tony | ⬜ Tonight |
-| Coordinate scrape target with Iryna (3.1) — ask her to expose `/metrics` | Dmytro | ⬜ Todo |
+| Coordinate scrape target with Iryna (3.1) — ask her to expose `/metrics` | Dmytro | ✅ Done — DM sent 2026-06-09 |
 
 ---
 

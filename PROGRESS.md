@@ -9,9 +9,9 @@
 
 ## Current status
 
-- **Phase:** 2 in progress
-- **Last session:** 2026-06-08
-- **Next action:** Review the scaffolded files in `platform-tools-25c-debian/eks-monitoring/` and understand each one before Phase 3
+- **Phase:** 3 in progress
+- **Last session:** 2026-06-09
+- **Next action:** Wait for Bohdan's `feature/add-default-tags-providers` PR to merge, then push `grafana-cloudwatch-role.tf` to `terraform-infra-25c-debian` on branch `feature/2.1-—-Metrics-&-SLOs`
 
 ---
 
@@ -112,7 +112,7 @@ Don't wait on her — scrape the cluster itself meanwhile.
 |-------|------|--------|
 | 1 | Understand EKS, Helm, Prometheus, Grafana, Alertmanager, CloudWatch | ✅ Done |
 | 2 | Design the `eks-monitoring/` Helm chart structure + per-env values | ✅ Done |
-| 3 | Prometheus scrape configs + CloudWatch IAM role | ⬜ Next |
+| 3 | Prometheus scrape configs + CloudWatch IAM role | 🟡 In progress |
 | 4 | Dashboards as code + security | ⬜ Todo |
 | 5 | Define and defend the SLO | ⬜ Todo |
 
@@ -252,6 +252,7 @@ Location: `skills/`
 | 2026-06-04 | Session 2: learned Helm chart anatomy (Chart.yaml, values.yaml, templates/), read full MRP25CDEB.md Jira board, mapped all 12 teammates to correct stories, understood the full project picture across all 5 epics |
 | 2026-06-08 | Session 3: read school resources repo (25c-debian-final) — got scaffold structure for platform-tools and terraform-infra. Added tag.md (Bohdan's cost attribution schema, Story 1.4). Added slack.md (Slack channel memory file). Read #final-project-25c-debian — key updates: Aiana's cluster is eks-dev now / eks-25c-debian-dev coming, tonight's standup at 9pm CST, Bohdan's PR #1 needs approval |
 | 2026-06-08 | Session 4: Phase 1 refreshed (all core concepts). Phase 2 checkpoint passed (dev vs prod differences: hostname, resources, retention, replicas). Scaffolded full eks-monitoring Helm chart in platform-tools-25c-debian on branch feature/2.1-eks-monitoring. 11 files created and pushed. |
+| 2026-06-09 | Session 5: Phase 1 & 2 recap as PM Q&A. Reviewed Iryna's PR #3 (Versus app) — confirmed no /metrics endpoint yet. Sent Iryna DM on Slack asking her to add django-prometheus and share service name/namespace. Reviewed Baigeldi's PR (feature/1.2-iam-identity-access) — 3 IAM modules (gha-role, app-role, human-role), safe to approve, no conflict with Story 2.1. Reviewed Bohdan's PR (feature/add-default-tags-providers) — confirmed default_tags exist: Project=25c-debian, Team=debian, Environment=dev, ManagedBy=terraform, Story=unset, Component=unset. NOT merged yet — holding Phase 3 Terraform PR until it merges. Wrote grafana-cloudwatch-role.tf — ready to push after Bohdan merges. Reviewed Tony's PR #4 (use_lockfile=true backend fix) — safe to approve. Standup update drafted and ready. |
 
 ---
 
