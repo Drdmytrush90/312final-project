@@ -21,8 +21,12 @@ It contains my skills reference, my progress journal, and the actual deliverable
 ├── PROGRESS.md                ← session memory — read this to resume any session
 ├── CLAUDE.md                  ← Claude session bootstrap instructions
 ├── MRP25CDEB.md               ← full Jira board — all 18 team tickets
-├── slack.md                   ← Slack channel log (#final-project-25c-debian)
+├── slack.md                   ← Slack channel log
 ├── tag.md                     ← team cost attribution tag schema (Story 1.4 / Bohdan)
+├── working-with-ai.md         ← WORKING-WITH-AI.md memoir (Story 2.1 deliverable)
+│
+├── terraform/
+│   └── grafana-cloudwatch-role.tf  ← CloudWatch IAM role (ready to push after Baigeldi merges)
 │
 ├── eks-monitoring/            ← placeholder (real deliverable in platform-tools repo)
 │
@@ -39,8 +43,8 @@ It contains my skills reference, my progress journal, and the actual deliverable
 
 I am the team's metrics owner. My job is to:
 
-1. Deploy **Prometheus + Grafana + Alertmanager** on EKS as a locally-vendored Helm chart under `eks-monitoring/`
-2. Prometheus scrapes the **cluster + at least one teammate's app**
+1. Deploy **Prometheus + Grafana + Alertmanager** on EKS as 3 independent Helm charts under `eks-monitoring/`
+2. Prometheus scrapes the **cluster + Iryna's Versus app**
 3. Grafana reads both **Prometheus** and **AWS CloudWatch**
 4. **Dashboards as code** — provisioned from the chart, not clicked by hand in the UI
 5. Grafana is **access-restricted** — IP allowlist + auth + credentials from AWS Secrets Manager
@@ -58,41 +62,25 @@ The interview story: *"I owned the metrics stack and defined the SLO that became
 |-------|------|--------|
 | 1 | Understand EKS, Helm, Prometheus, Grafana, Alertmanager, CloudWatch | ✅ Done |
 | 2 | Design `eks-monitoring/` Helm chart structure + per-env values | ✅ Done |
-| 3 | Prometheus scrape configs + CloudWatch IAM role | ⬜ Next |
-| 4 | Dashboards as code + security | ⬜ Todo |
+| 3 | Deploy to eks-dev — scrape configs + fix all bugs | ✅ Done (2026-06-10) |
+| 4 | CloudWatch datasource + dashboards + security | 🟡 In progress |
 | 5 | Define and defend the SLO | ⬜ Todo |
 
 ---
 
-## What was built (Phase 2 — Session 4, 2026-06-08)
+## Current state (as of 2026-06-10)
 
-Full Helm chart scaffolded in `platform-tools-25c-debian` on branch `feature/2.1-eks-monitoring`:
+All 3 charts deployed and running on `eks-dev`:
 
-```
-eks-monitoring/
-├── Chart.yaml                 ← chart identity: name, version, description
-├── values.yaml                ← default values for all environments
-├── values-dev.yaml            ← dev: 7d retention, small resources, 1 replica
-├── values-staging.yaml        ← staging: 14d retention, medium resources
-├── values-prod.yaml           ← prod: 30d retention, large resources, 2 replicas
-└── templates/
-    ├── deployment.yaml        ← Prometheus + Grafana + Alertmanager deployments
-    ├── service.yaml           ← internal cluster routing between pods
-    ├── configmap.yaml         ← Prometheus scrape configuration
-    ├── ingress.yaml           ← Grafana hostname routing
-    ├── servicemonitor.yaml    ← tells Prometheus what to scrape
-    └── prometheusrule.yaml    ← alert rules (Askar / Story 2.3 builds on this)
-```
+| Chart | Status | Notes |
+|-------|--------|-------|
+| Prometheus | ✅ Running | Scraping cluster, emptyDir in dev |
+| Grafana | ✅ Running | Logged in, Prometheus datasource connected, Platform Overview dashboard live |
+| Alertmanager | ✅ Running | Null receivers in dev, no false alerts |
 
-### Key decisions made in Phase 2
+**Grafana:** accessible at `localhost:3000` via port-forward. Login: `admin / DevGrafana2026!`
 
-| Setting | dev | staging | prod |
-|---------|-----|---------|------|
-| Hostname | grafana-debian-dev.312debian.com | grafana-debian-staging.312debian.com | grafana-debian-prod.312debian.com |
-| Retention | 7 days | 14 days | 30 days |
-| Replicas | 1 | 1 | 2 |
-| CPU request | 100m | 200m | 500m |
-| Memory request | 256Mi | 512Mi | 1Gi |
+**One remaining blocker:** Baigeldi's IAM PR must merge before I can push `grafana-cloudwatch-role.tf` and wire CloudWatch.
 
 ---
 
@@ -100,17 +88,10 @@ eks-monitoring/
 
 | Repo | Branch | Purpose |
 |------|--------|---------|
-| `312school/platform-tools-25c-debian` | `feature/2.1-eks-monitoring` | Helm chart (main deliverable) |
-| `312school/terraform-infra-25c-debian` | `feature/2.1-—-Metrics-&-SLOs` | CloudWatch IAM role (Phase 3) |
+| `312school/platform-tools-25c-debian` | `feature/2.1-eks-monitoring` | Helm charts (main deliverable) |
+| `312school/terraform-infra-25c-debian` | `feature/2.1-—-Metrics-&-SLOs` | CloudWatch IAM role (Phase 4) |
 | `Drdmytrush90/312final-project` | `main` | Session memory + skills reference |
-| `312school/versus-25c-debian` | — | Iryna's app (Story 3.1) — my Prometheus scrape target |
-
-## Teammate repos accessed this project
-
-| Repo | Owner | What we did |
-|------|-------|-------------|
-| `312school/versus-25c-debian` | Iryna Rozenstein (Story 3.1) | Read PR #3 — reviewed Docker images + Helm charts. Confirmed no `/metrics` endpoint yet. Sent Iryna DM 2026-06-09 asking to add `django-prometheus`. |
-| `312school/terraform-infra-25c-debian` | Team shared repo | Reviewed Baigeldi's PR (1.2 IAM modules) and Bohdan's PR (default_tags). Waiting for Bohdan's tags to merge before pushing Phase 3 IAM role. |
+| `312school/versus-25c-debian` | `feature/3.1-versus-k8s` | Iryna's app — my Prometheus scrape target ✅ Ready |
 
 ---
 
@@ -132,7 +113,7 @@ eks-monitoring/
 | `helm-values-manager` | 2 | Per-env values: dev / staging / prod |
 | `prometheus-config-generator` | 3 | Scrape configs and ServiceMonitors |
 | `iam-role-generator` | 3 | IAM role for CloudWatch → Grafana |
-| `cloudwatch-alarm-creator` | 3 | CloudWatch data source wiring |
+| `cloudwatch-alarm-creator` | 4 | CloudWatch data source wiring |
 | `grafana-dashboard-creator` | 4 | Dashboards as JSON provisioned from chart |
 | `kubernetes-secrets-manager` | 4 | Grafana credentials from Secrets Manager |
 | `alertmanager-rules-config` | 5 | Alertmanager config + SLO alert rule |
