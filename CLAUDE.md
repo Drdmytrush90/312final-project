@@ -12,8 +12,6 @@ Read these files to resume where the last session ended:
 1. `MRP25CDEB.md` — full list of Jira issues for the MockRealProject - 25C - Debian project
 2. `PROGRESS.md` — running journal of completed work and next steps
 3. `README.md` — project overview and structure
-4. `slack.md` — Slack channel log (#final-project-25c-debian) — read this to catch up on team updates, standup notes, and any new decisions made between sessions
-5. `tag.md` — team cost attribution tag schema (Story 1.4 / Bohdan) — use these tag keys when creating any AWS resources so spend can be attributed correctly
 
 ---
 
@@ -32,12 +30,14 @@ Read these files to resume where the last session ended:
 
 This project uses **two separate tokens** — always use the correct one for the correct repo:
 
-| Token | Stored in project file | Use for |
-|-------|----------------------|---------|
-| **GitHub repo** | `GitHub_repo` | `Drdmytrush90/*` — personal repos (312final-project, etc.) |
-| **git 312 repo acces** | `git_312_repo_acces` | `312school/*` — school org repos (platform-tools, terraform-infra, versus-25c-debian, etc.) |
+| Token | Use for |
+|-------|---------|
+| **Token 1 (personal)** | `Drdmytrush90/*` — personal repos (312final-project, etc.) |
+| **Token 2 (312school)** | `312school/*` — school org repos (platform-tools, terraform-infra, etc.) |
 
-> ⚠️ Always load both token files at the start of a session. Never mix them up.
+Token 2 needs these permissions: **Contents + Workflows + Pull Requests** — Read & Write.
+
+> ⚠️ Always ask user to paste both tokens at the start of a session. Never mix them up.
 
 ---
 
@@ -45,9 +45,30 @@ This project uses **two separate tokens** — always use the correct one for the
 
 | Repo | Branch | What goes there |
 |------|--------|-----------------|
-| `312school/platform-tools-25c-debian` | `feature/2.1-eks-monitoring` | Helm chart — Prometheus + Grafana + Alertmanager |
-| `312school/terraform-infra-25c-debian` | `feature/2.1-—-Metrics-&-SLOs` | CloudWatch IAM role (Terraform) |
+| `312school/platform-tools-25c-debian` | `feature/2.1-eks-monitoring` | Helm charts — Prometheus + Grafana + Alertmanager |
+| `312school/terraform-infra-25c-debian` | `feature/2.1-metrics-slos` | CloudWatch IAM role (Terraform module) |
 | `Drdmytrush90/312final-project` | `main` | Session memory, skills reference, progress journal |
+
+---
+
+# Open PRs (waiting for approvals)
+
+| Repo | PR | Title |
+|------|----|-------|
+| `platform-tools-25c-debian` | [#8](https://github.com/312school/platform-tools-25c-debian/pull/8) | feat(2.1): Metrics & SLOs — Prometheus + Grafana + Alertmanager |
+| `terraform-infra-25c-debian` | [#15](https://github.com/312school/terraform-infra-25c-debian/pull/15) | feat(2.1): add Grafana CloudWatch IRSA role |
+
+---
+
+# Live Cluster Info
+
+- **Cluster:** `eks-25c-debian-dev` (us-east-1)
+- **Connect:** `aws eks update-kubeconfig --name eks-25c-debian-dev --region us-east-1`
+- **Gateway:** `shared-gateway` in `kube-system` (Yury's Story 1.3)
+- **Grafana host:** `grafana-debian-dev.312debian.com`
+- **CloudWatch role ARN:** `arn:aws:iam::905418100201:role/grafana-cloudwatch-read-dev`
+- **EKS OIDC:** `oidc.eks.us-east-1.amazonaws.com/id/74039390E14D831D5E55D47F4EA1BC5D`
+- **AWS Account:** `905418100201`
 
 ---
 
@@ -55,4 +76,18 @@ This project uses **two separate tokens** — always use the correct one for the
 
 | Repo | Owner | Why it matters |
 |------|-------|----------------|
-| `312school/versus-25c-debian` | Iryna Rozenstein (Story 3.1) | My Prometheus scrape target — Python/Django backend + RDS MySQL on Kubernetes. Need her to add `django-prometheus` and expose `/metrics`. DM sent 2026-06-09. |
+| `312school/versus-25c-debian` | Iryna Rozenstein (3.1) | Prometheus scrape target — `/metrics` live, `name: http` port added |
+
+---
+
+# Tag Schema (Bohdan Story 1.4)
+
+All AWS resources must have these tags:
+```
+Project     = "25c-debian"
+Team        = "debian"
+Environment = "dev"
+Story       = "2.1-metrics"
+Component   = "security" (IAM) / "compute" (EKS) / "storage" (EBS)
+ManagedBy   = "terraform" / "helm"
+```
