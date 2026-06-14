@@ -9,14 +9,13 @@
 
 ## Current status
 
-- **Phase:** 3 complete / Phase 4 starting
-- **Last session:** 2026-06-10
+- **Phase:** 4 complete / Phase 5 starting
+- **Last session:** 2026-06-14
 - **Next action:**
-  1. Add Versus ServiceMonitor back — use port `http`, selector `app: versus-backend`, confirm namespace with Iryna
-  2. Wait for Baigeldi's PR to merge → push `grafana-cloudwatch-role.tf` → add CloudWatch datasource to Grafana
-  3. Update `deploy-platform-tools.yaml` — fix cluster name + add eks-monitoring deploy step
-  4. Open PR for `feature/2.1-eks-monitoring`
-  5. Define and write the SLO document (Phase 5)
+  1. Write SLO document (Phase 5) — SLI, target, measurement window, error budget, response plan
+  2. On Monday confirm gateway name with Yury (already updated to shared-gateway/kube-system ✅)
+  3. Wait for PR approvals — platform-tools PR #8, terraform-infra PR #15
+  4. Once PRs merge, redeploy grafana with IRSA annotation so CloudWatch datasource activates
 
 ---
 
@@ -70,11 +69,11 @@ All tickets are in `MRP25CDEB.md` in this repo.
 
 | Who | Why I need them | Status |
 |-----|-----------------|--------|
-| Aiana (1.1) | Her EKS cluster is what I deploy onto | ✅ Using eks-dev now |
-| Yury (1.3) | Grafana hostname exposed through his Gateway API | ✅ Migrated to HTTPRoute today |
-| Anvar (1.5) | HTTPS for Grafana via his cert-manager | Pending |
-| Baigeldi (1.2) | CloudWatch IAM role needs his default_tags | 🔴 Waiting for PR to merge |
-| Iryna (3.1) | Versus app as Prometheus scrape target | ✅ She added /metrics and name:http port today |
+| Aiana (1.1) | EKS cluster | ✅ eks-25c-debian-dev live |
+| Yury (1.3) | Grafana HTTPRoute on Gateway API | ✅ shared-gateway/kube-system |
+| Anvar (1.5) | HTTPS for Grafana via cert-manager | Pending |
+| Baigeldi (1.2) | CloudWatch IAM role default_tags | ✅ Merged to main |
+| Iryna (3.1) | Versus app as Prometheus scrape target | ✅ /metrics + name:http port |
 
 ---
 
@@ -84,106 +83,107 @@ All tickets are in `MRP25CDEB.md` in this repo.
 |-------|------|--------|
 | 1 | Understand EKS, Helm, Prometheus, Grafana, Alertmanager, CloudWatch | ✅ Done |
 | 2 | Design the `eks-monitoring/` Helm chart structure + per-env values | ✅ Done |
-| 3 | Deploy to eks-dev — scrape configs + fix all bugs | ✅ Done — all 3 charts running |
-| 4 | CloudWatch datasource + dashboards + security | 🟡 In progress |
-| 5 | Define and defend the SLO | ⬜ Todo |
+| 3 | Deploy to eks-dev — scrape configs + fix all bugs | ✅ Done |
+| 4 | CloudWatch datasource + dashboards + deploy workflow + PRs | ✅ Done |
+| 5 | Define and defend the SLO | 🟡 Next |
 
 ---
 
-## Phase 3 — COMPLETED ✅ (2026-06-10)
+## Phase 4 — COMPLETED ✅ (2026-06-14)
 
-### What was deployed
+### What was done this session
 
-All 3 charts running on `eks-dev` in the `monitoring` namespace:
-- **Prometheus** ✅ — scraping the cluster (node CPU, memory, pod status)
-- **Grafana** ✅ — logged in at localhost:3000, Prometheus datasource connected and default
-- **Alertmanager** ✅ — running with null receivers in dev (no false alerts)
+**Cluster migration**
+- Moved all 3 charts from old `eks-dev` to new `eks-25c-debian-dev` (Aiana's Terraform cluster)
+- Updated HTTPRoute parentRefs: `team-gateway/platform-tools` → `shared-gateway/kube-system`
+- All 3 pods confirmed Running on new cluster
 
-### Architecture — 3 independent charts (App-of-Apps)
+**CloudWatch datasource**
+- Added `cloudwatch` section to `grafana/values.yaml` (roleArn + defaultRegion)
+- Updated `datasources-configmap.yaml` — CloudWatch datasource alongside Prometheus
+- IRSA auth (no static keys), scoped to monitoring:grafana ServiceAccount
+
+**deploy-platform-tools.yaml**
+- Fixed cluster name: `temporary-eks-cluster-dev` → `eks-25c-debian-dev`
+- Added Install Helm step + 3 deploy steps (prometheus, grafana, alertmanager)
+- `--wait --timeout 5m` on each step
+
+**WORKING-WITH-AI.md memoir**
+- Written and pushed to `eks-monitoring/stories/2.1-metrics/`
+- Documents 5 bugs found and fixed, 4 key decisions, verification steps
+
+**Both PRs opened**
+- `platform-tools-25c-debian` PR #8 — main deliverable
+- `terraform-infra-25c-debian` PR #15 — CloudWatch IAM role
+- Slack message sent to team requesting 3 approvals
+
+**Dashboard confirmed working**
+- Platform Overview dashboard provisioned as code (4 panels)
+- Pod Restarts panel showing real data across all namespaces
+- HTTP panels empty — expected, waiting on Iryna's app traffic
+
+---
+
+## Architecture — 3 independent charts (App-of-Apps)
 
 ```
 eks-monitoring/
 ├── prometheus/         ← wraps kube-prometheus-stack 61.3.2
 │   ├── Chart.yaml
 │   ├── values.yaml         ← base config
-│   ├── values-dev.yaml     ← emptyDir storage (no gp3 provisioner in dev)
+│   ├── values-dev.yaml     ← emptyDir storage
 │   ├── values-staging.yaml
 │   ├── values-prod.yaml
 │   └── templates/
-│       └── slo-rules.yaml  ← error rate + P99 latency SLO alerts
+│       └── slo-rules.yaml
 │
 ├── grafana/            ← wraps grafana 8.5.2
-│   ├── values.yaml         ← Prometheus datasource, Platform Overview dashboard
+│   ├── values.yaml         ← Prometheus + CloudWatch datasources, IRSA role ARN
 │   ├── values-dev.yaml     ← no persistence, createSecret: false
 │   └── templates/
-│       ├── admin-secret.yaml     ← createSecret toggle (false = pre-existing secret)
-│       ├── datasources-configmap.yaml
-│       ├── dashboards-configmap.yaml  ← 4 panels: request rate, 5xx, P99, pod restarts
-│       └── httproute.yaml        ← Gateway API (migrated from Ingress today)
+│       ├── admin-secret.yaml
+│       ├── datasources-configmap.yaml  ← Prometheus + CloudWatch
+│       ├── dashboards-configmap.yaml   ← 4 panels
+│       └── httproute.yaml              ← shared-gateway/kube-system
 │
-├── alertmanager/       ← config-only chart (no upstream dep)
+├── alertmanager/       ← config-only chart
 │   ├── values.yaml
-│   ├── values-dev.yaml     ← null receivers, emptyDir storage
+│   ├── values-dev.yaml     ← null receivers
 │   └── templates/
 │       └── config.yaml
 │
-└── argocd/             ← App-of-Apps manifests (not deployed yet)
-    ├── app-of-apps.yaml
-    ├── prometheus-app.yaml   ← sync-wave: -1 (deploys first)
-    ├── grafana-app.yaml
-    └── alertmanager-app.yaml
+└── stories/
+    └── 2.1-metrics/
+        └── WORKING-WITH-AI.md
 ```
-
-### 5 bugs found and fixed during deployment
-
-| Bug | Root cause | Fix |
-|-----|-----------|-----|
-| Prometheus stuck Pending | Helm deep-merge: emptyDir + volumeClaimTemplate both set → Operator chose PVC, dev has no gp3 provisioner | Remove storageSpec from base values.yaml; each env owns it entirely |
-| Grafana wrong routing | Chart used Ingress (nginx); platform uses Gateway API (Yury 1.3) | Replaced ingress.yaml with httproute.yaml |
-| Wrong hostname | values.yaml had 312ubuntu.com instead of 312debian.com | Fixed to grafana-debian-dev.312debian.com |
-| Grafana login failed | Upstream Helm chart owns and overwrites the secret with placeholder password on every deploy | Reset via `grafana cli admin reset-admin-password`; added `createSecret: false` toggle |
-| Alertmanager crashing | (1) No gp3 provisioner in dev; (2) Placeholder webhook URLs couldn't be parsed | emptyDir storage + null receivers in dev values |
-
-### Iryna coordination — COMPLETE ✅
-
-Iryna added to `feature/3.1-versus-k8s` today:
-- **`[347ff60]`** — `add django-prometheus metrics endpoint` — `/metrics` is live
-- **`[3c8449e]`** — `fix: add port name to backend service` — `name: http` added to service port
-
-Her service.yaml now has:
-```yaml
-ports:
-  - name: http       ← this is what my ServiceMonitor needs
-    port: 80
-    targetPort: 8080
-```
-
-**To re-add ServiceMonitor:** port = `http`, selector = `app: versus-backend`, confirm namespace.
-
-### What's NOT done yet (Phase 4)
-
-| Item | Blocked on |
-|------|-----------|
-| CloudWatch datasource in Grafana | Baigeldi's IAM PR to merge → push grafana-cloudwatch-role.tf |
-| Versus ServiceMonitor | Confirm namespace with Iryna, then add back to prometheus chart |
-| `deploy-platform-tools.yaml` update | Just needs to be done — fix cluster name + add eks-monitoring steps |
-| Open PR for branch | Just needs to be done |
-| SLO document | Phase 5 — write after everything else |
-
----
-
-## School resources repo
-
-- `312school/platform-tools-25c-debian` — where `eks-monitoring/` lives (my deliverable folder)
-- `312school/terraform-infra-25c-debian` — where my CloudWatch IAM role Terraform goes
-- Baigeldi's branch: `feature/1.2-iam-identity-access` — has `default_tags` I need. 7 commits today, ready to merge.
-- Iryna's branch: `feature/3.1-versus-k8s` — has `/metrics` + `name:http` port. Ready to scrape.
 
 ## Live cluster info
 
-- **Current cluster:** `eks-dev` (us-east-1) — kubeconfig works, all charts deployed here
-- **Incoming cluster:** `eks-25c-debian-dev` (Aiana's Terraform cluster — in progress)
-- When Aiana's cluster is ready, update `deploy-platform-tools.yaml` cluster name
+- **Cluster:** `eks-25c-debian-dev` (us-east-1)
+- **Gateway:** `shared-gateway` in `kube-system` (Yury's Story 1.3)
+- **Grafana host:** `grafana-debian-dev.312debian.com`
+- **CloudWatch role ARN:** `arn:aws:iam::905418100201:role/grafana-cloudwatch-read-dev`
+- **EKS OIDC:** `oidc.eks.us-east-1.amazonaws.com/id/74039390E14D831D5E55D47F4EA1BC5D`
+
+## Open PRs
+
+| Repo | PR | Status |
+|------|----|--------|
+| platform-tools-25c-debian | [#8](https://github.com/312school/platform-tools-25c-debian/pull/8) | Waiting for 3 approvals |
+| terraform-infra-25c-debian | [#15](https://github.com/312school/terraform-infra-25c-debian/pull/15) | Waiting for 3 approvals |
+
+---
+
+## Phase 5 — SLO (Next)
+
+Need to write:
+- **SLI**: what we measure (e.g. Versus HTTP error rate)
+- **Target**: e.g. 99.5% of requests succeed over 30 days
+- **Measurement window**: 30 days rolling
+- **Error budget**: 0.5% = ~3.6 hours of downtime per month
+- **Response plan**: what happens when budget burns >50% or >100%
+- Add SLO panel to dashboard
+- Write SLO doc in `eks-monitoring/stories/2.1-metrics/SLO.md`
 
 ---
 
@@ -191,12 +191,13 @@ ports:
 
 | Date | What we did |
 |------|-------------|
-| 2026-06-04 | Session 1: explored repo, identified best skills, built 5-phase plan, completed Phase 1 (all core concepts), created this repo, saved skills |
-| 2026-06-04 | Session 2: learned Helm chart anatomy, read full MRP25CDEB.md Jira board, mapped all 12 teammates to correct stories |
-| 2026-06-08 | Session 3: read school resources repo, added tag.md and slack.md, confirmed eks-dev cluster |
-| 2026-06-08 | Session 4: Phase 2 complete — scaffolded full eks-monitoring Helm chart in platform-tools-25c-debian on branch feature/2.1-eks-monitoring. 11 files pushed. |
-| 2026-06-09 | Session 5: Phase 1 & 2 recap. Reviewed Iryna's PR — no /metrics yet. Sent Iryna DM. Reviewed Baigeldi's PR — safe to approve. Reviewed Bohdan's PR — default_tags confirmed. Wrote grafana-cloudwatch-role.tf. |
-| 2026-06-10 | Session 6: Connected Jira. Rebuilt eks-monitoring as 3 independent charts (App-of-Apps). Deployed all 3 to eks-dev. Fixed 5 bugs: Helm deep-merge PVC bug, wrong routing type (Ingress→HTTPRoute), wrong hostname (ubuntu→debian), Grafana password not applying, Alertmanager crashing on placeholder URLs. Grafana live at localhost:3000, Prometheus datasource connected. Added createSecret toggle to admin-secret.yaml. Iryna confirmed — she added /metrics and name:http port today. No blocker from Iryna. One remaining blocker: Baigeldi's IAM PR. |
+| 2026-06-04 | Session 1: explored repo, identified best skills, built 5-phase plan, completed Phase 1, created this repo |
+| 2026-06-04 | Session 2: learned Helm chart anatomy, read full MRP25CDEB.md, mapped all 12 teammates |
+| 2026-06-08 | Session 3: read school resources repo, confirmed eks-dev cluster |
+| 2026-06-08 | Session 4: Phase 2 complete — scaffolded full eks-monitoring chart, 11 files pushed |
+| 2026-06-09 | Session 5: reviewed Iryna's PR, reviewed Baigeldi's PR, wrote grafana-cloudwatch-role.tf |
+| 2026-06-10 | Session 6: rebuilt as 3 independent charts, deployed all 3 to eks-dev, fixed 5 bugs, Grafana live |
+| 2026-06-14 | Session 7: migrated to eks-25c-debian-dev, updated Gateway, added CloudWatch datasource, updated deploy workflow, wrote WORKING-WITH-AI.md, opened both PRs, sent Slack message |
 
 ---
 
@@ -204,8 +205,7 @@ ports:
 
 - NEVER paste a GitHub PAT into chat more than once per session
 - Always revoke the token after the session ends
-- Generate fresh token: `github.com → Settings → Developer settings → Personal access tokens → Fine-grained tokens`
-- Scope: Contents Read & Write on `312final-project` only
+- Scope: Contents + Workflows + Pull Requests — Read & Write on 312school repos
 - Expiry: 30 days max
 
 ---
