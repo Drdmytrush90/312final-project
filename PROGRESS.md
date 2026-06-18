@@ -10,11 +10,11 @@
 ## Current status
 
 - **Phase:** ALL PHASES COMPLETE
-- **Last session:** 2026-06-14 (STORY COMPLETE)
+- **Last session:** 2026-06-17
 - **Next action:**
-  1. Write SLO document (Phase 5) — SLI, target, measurement window, error budget, response plan
-  2. On Monday confirm gateway name with Yury (already updated to shared-gateway/kube-system ✅)
-  3. Wait for PR approvals — platform-tools PR #8, terraform-infra PR #15
+  1. Get PR #13 approved and merged (ALB fix)
+  2. Write SLO document (Phase 5) — SLI, target, measurement window, error budget, response plan
+  3. Investigate empty HTTP panels — check PromQL queries and ServiceMonitor for Versus app
   4. Once PRs merge, redeploy grafana with IRSA annotation so CloudWatch datasource activates
 
 ---
@@ -170,6 +170,7 @@ eks-monitoring/
 | Repo | PR | Status |
 |------|----|--------|
 | platform-tools-25c-debian | [#8](https://github.com/312school/platform-tools-25c-debian/pull/8) | Waiting for 3 approvals |
+| platform-tools-25c-debian | [#13](https://github.com/312school/platform-tools-25c-debian/pull/13) | ALB targetType fix — waiting for approval |
 | terraform-infra-25c-debian | [#15](https://github.com/312school/terraform-infra-25c-debian/pull/15) | Waiting for 3 approvals |
 
 ---
@@ -198,6 +199,7 @@ Need to write:
 | 2026-06-09 | Session 5: reviewed Iryna's PR, reviewed Baigeldi's PR, wrote grafana-cloudwatch-role.tf |
 | 2026-06-10 | Session 6: rebuilt as 3 independent charts, deployed all 3 to eks-dev, fixed 5 bugs, Grafana live |
 | 2026-06-14 | Session 7: migrated to eks-25c-debian-dev, updated Gateway, added CloudWatch datasource, updated deploy workflow, wrote WORKING-WITH-AI.md, opened both PRs, sent Slack message |
+| 2026-06-17 | Session 8: diagnosed and fixed 5-day Grafana outage — ALB targetType: ip fix via TargetGroupConfiguration, Gateway PROGRAMMED=True, Grafana HTTP 302 confirmed. Opened PR #13. Investigated empty HTTP dashboard panels (not a Grafana issue — app-level metrics not reaching Prometheus). Updated WORKING-WITH-AI.md and PROGRESS.md. |
 
 ---
 

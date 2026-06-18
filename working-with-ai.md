@@ -1,6 +1,6 @@
 # Working with AI — MRP25CDEB-6 Story 2.1 — Metrics & SLOs
 
-*Author: Dmytro Dmytrush. Story assigned: 2026-06-04. Last updated: 2026-06-10.
+*Author: Dmytro Dmytrush. Story assigned: 2026-06-04. Last updated: 2026-06-17.
 Cluster / repo: 312school/platform-tools-25c-debian / eks-monitoring*
 
 ---
@@ -14,6 +14,7 @@ Cluster / repo: 312school/platform-tools-25c-debian / eks-monitoring*
 - Deciding to hold the Terraform CloudWatch IAM role PR until Baigeldi's `feature/1.2-iam-identity-access` PR merged — I read his branch, confirmed his `providers.tf` has `default_tags`, and decided it was cleaner to layer on top
 - Switching Grafana routing from Ingress to Gateway API HTTPRoute — I knew Yury (Story 1.3) had already migrated the platform to Gateway API, so using old-style Ingress would mean Grafana traffic never reaches the pod
 - The PROGRESS.md session memory system — storing session state in a GitHub repo so Claude can resume with full context across sessions
+- Diagnosing the 5-day Grafana outage — I identified that the ALB was in Instance mode and the fix was to switch to IP mode via TargetGroupConfiguration
 
 **Claude generated:**
 - The full 3-chart Helm scaffold: all Chart.yaml, values.yaml, values-dev/staging/prod.yaml, and all template files
@@ -22,6 +23,9 @@ Cluster / repo: 312school/platform-tools-25c-debian / eks-monitoring*
 - The standup messages posted to the team Slack channel
 - The DM sent to Iryna asking her to expose `/metrics` via `django-prometheus`
 - Debugging analysis for all 5 deployment bugs found during the eks-dev deploy
+- The root cause analysis and fix explanation for the ALB targetType issue (PR #13)
+- The PR description and Slack message for requesting team review of PR #13
+- The standup summary for June 17
 
 ---
 
@@ -64,6 +68,15 @@ This means the password can never be accidentally overwritten by a helm upgrade.
 
 I noticed Claude had no recollection of anything from the previous session. Built a structured session memory file in GitHub that Claude reads at the start of every session. Saves 15+ minutes of re-orientation per session.
 
+**Decision 7 — Fix ALB routing with TargetGroupConfiguration (targetType: ip)**
+
+The LoadBalancerConfiguration had no targetType set, so the ALB controller defaulted to Instance mode for 5 days.
+Instance mode requires services to be NodePort or LoadBalancer — Grafana's service is ClusterIP, so the ALB had no port to route to and kept failing with "TargetGroup port is empty."
+I decided to add a `TargetGroupConfiguration` resource (`shared-tgc`) with `targetType: ip` and reference it from `LoadBalancerConfiguration`.
+This switches the ALB to route directly to pod IPs, which is fully compatible with ClusterIP services.
+Trade-off accepted: IP mode requires VPC CNI (which we already have) and means ALB talks to pod IPs directly instead of going through node-level routing — cleaner architecture, less surface area.
+Result: Gateway went PROGRAMMED=Unknown → PROGRAMMED=True. Grafana returned HTTP 302 login redirect confirming it was reachable.
+
 ---
 
 ## 3. What Claude got wrong
@@ -95,6 +108,11 @@ Claude should have warned: when overriding storage config in Helm, remove the ba
 Claude generated `grafana/templates/ingress.yaml` using classic Ingress (nginx). It should have asked: what routing type does this platform use? Yury (Story 1.3) migrated the entire platform to Gateway API weeks ago. Any new chart using Ingress will silently get no traffic.
 I caught this when Grafana deployed but was unreachable — port-forward worked but the hostname routing didn't.
 
+**Incident 6 — ALB targetType not flagged during gateway setup**
+
+When Claude helped set up the Gateway API and LoadBalancerConfiguration, it did not flag that missing `targetType` defaults to Instance mode, which is incompatible with ClusterIP services.
+This caused a 5-day outage. The fix was straightforward once the root cause was clear, but Claude should have included `targetType: ip` in the initial TargetGroupConfiguration or at minimum flagged the default behavior as a known pitfall when the backing service is ClusterIP.
+
 ---
 
 ## 4. What I verified, and how
@@ -113,10 +131,21 @@ I caught this when Grafana deployed but was unreachable — port-forward worked 
 - Read Iryna's `service.yaml` directly to confirm `name: http` was added — didn't trust the commit message alone
 - Decoded Iryna's `urls.py` to confirm `django_prometheus.urls` is wired at the root path
 
+**Verified during Phase 4 / PR #13 (ALB fix — 2026-06-17):**
+- Confirmed Gateway status moved from `PROGRAMMED=Unknown` to `PROGRAMMED=True` after applying TargetGroupConfiguration
+- Ran `curl -I https://grafana-debian-dev.312debian.com` — confirmed HTTP 302 login redirect (proof Grafana is reachable end-to-end through the ALB)
+- Opened PR #13 on `platform-tools-25c-debian` with full root cause explanation and verification results
+
 **To verify when CloudWatch is wired:**
 - [ ] Query CloudWatch datasource via Grafana API and confirm data returns — not just "connected" status
 - [ ] Confirm RDS panel shows real metrics from eks-dev environment
 - [ ] Confirm ALB request count appears in the Platform Overview dashboard
+
+**To verify for HTTP panels (currently empty):**
+- [ ] Check PromQL query in each panel — confirm which metric names are expected
+- [ ] Confirm Versus app exposes those specific metrics at `/metrics`
+- [ ] Confirm ServiceMonitor is scraping the correct namespace
+- [ ] Check Prometheus UI → Targets to verify versus target is UP
 
 ---
 
@@ -127,6 +156,7 @@ I caught this when Grafana deployed but was unreachable — port-forward worked 
 - Ask for all required coordination fields in a single message — namespace + service name + port name in one DM to Iryna
 - When overriding Helm storageSpec: always remove the base value, never just add an env override on top
 - Read all shared `providers.tf` files before generating any Terraform — prevents the `default_tags` duplication incident
+- Always set `targetType: ip` explicitly in TargetGroupConfiguration when using ClusterIP services — never rely on the default
 
 ---
 
@@ -140,6 +170,12 @@ Example using Incident 4 (Helm deep-merge):
 - **Action:** Checked PVC status — saw a PVC was created but never bound. Traced back to Helm deep-merging `emptyDir` from values-dev.yaml with `volumeClaimTemplate` from values.yaml — both fields present, Operator chose PVC, dev has no storage provisioner. Fix: removed storageSpec from base values.yaml entirely, each env file owns the full storageSpec.
 - **Result:** Prometheus started. Learned that Helm deep-merges don't replace — they combine. Any storage or complex nested config must be owned entirely by one values file.
 
+Example using Incident 6 (ALB targetType):
+- **Situation:** Grafana was deployed and the Gateway showed PROGRAMMED=Unknown for 5 days
+- **Task:** Diagnose why the ALB wasn't routing traffic to Grafana
+- **Action:** Read the ALB controller logs, found "TargetGroup port is empty." Traced it to LoadBalancerConfiguration missing `targetType` — defaulted to Instance mode, which requires NodePort/LoadBalancer services. Grafana uses ClusterIP. Fixed by adding a TargetGroupConfiguration with `targetType: ip`.
+- **Result:** Gateway went PROGRAMMED=True, Grafana reachable at grafana-debian-dev.312debian.com. Learned: always set targetType explicitly — Instance mode is the AWS default but incompatible with ClusterIP services.
+
 ---
 
-*Last updated: 2026-06-10. Continue updating as the project progresses.*
+*Last updated: 2026-06-17. Continue updating as the project progresses.*
