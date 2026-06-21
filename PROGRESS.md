@@ -9,13 +9,15 @@
 
 ## Current status
 
-- **Phase:** ALL PHASES COMPLETE
-- **Last session:** 2026-06-17
-- **Next action:**
-  1. Get PR #13 approved and merged (ALB fix)
-  2. Write SLO document (Phase 5) — SLI, target, measurement window, error budget, response plan
-  3. Investigate empty HTTP panels — check PromQL queries and ServiceMonitor for Versus app
-  4. Once PRs merge, redeploy grafana with IRSA annotation so CloudWatch datasource activates
+- **Phase:** ALL CORE WORK COMPLETE — in "close out loose ends before demo" mode
+- **Last session:** 2026-06-21
+- **DEMO DAY: Tuesday 2026-06-23** — this is the priority now
+- **Next action (in order):**
+  1. **Unblock PR #14** (platform-tools, ALB targetType:ip fix) — has all 3 approvals (Inga, Iryna, Yury) but merge is BLOCKED by a branch-protection rule requiring an *active* dev deployment. The last deployment shows as inactive. Re-run/re-trigger the dev deploy workflow on this branch to refresh it, then merge.
+  2. **Get PR #17 reviewed** (platform-tools, Versus K8s Grafana dashboard + SLO panels) — opened 2026-06-20, zero reviews so far. Ping the team for review before Tuesday.
+  3. **Rebase PR #19** (terraform-infra, Grafana CloudWatch IRSA role) — opened 2026-06-16, now 53 commits behind `main` (mergeable_state: dirty). Needs a rebase/merge-from-main before anyone can review it cleanly. This is the CloudWatch datasource blocker.
+  4. **Add an "Issues Faced" section to `eks-monitoring/README.md`** — the class demo checklist requires this explicitly. Currently the real incidents (ALB bug, Helm deep-merge bug, label mismatch) only live in `WORKING-WITH-AI.md`, not surfaced in the README itself.
+  5. **Prep the demo narrative** — overview, approach, questions faced, research, implementation walkthrough, challenges, outcome (see class "Suggestion for Students" format).
 
 ---
 
@@ -200,6 +202,7 @@ Need to write:
 | 2026-06-10 | Session 6: rebuilt as 3 independent charts, deployed all 3 to eks-dev, fixed 5 bugs, Grafana live |
 | 2026-06-14 | Session 7: migrated to eks-25c-debian-dev, updated Gateway, added CloudWatch datasource, updated deploy workflow, wrote WORKING-WITH-AI.md, opened both PRs, sent Slack message |
 | 2026-06-17 | Session 8: diagnosed and fixed 5-day Grafana outage — ALB targetType: ip fix via TargetGroupConfiguration, Gateway PROGRAMMED=True, Grafana HTTP 302 confirmed. Opened PR #13. Investigated empty HTTP dashboard panels (not a Grafana issue — app-level metrics not reaching Prometheus). Updated WORKING-WITH-AI.md and PROGRESS.md. |
+| 2026-06-21 | Session 9: full repo + PR audit ahead of Tuesday demo. Found PR #13 was actually closed unmerged — superseded by PR #14 (same fix), which now has all 3 approvals but is blocked by the branch-protection "active deployment" gate. PR #17 (Versus dashboard, SLO panels) open since 6/20, no reviews yet. PR #19 (CloudWatch IRSA) is 53 commits behind main, needs rebase. Confirmed PR #8 (the core Story 2.1 deliverable) is merged. Updated PROGRESS.md with accurate current state. |
 
 ---
 
